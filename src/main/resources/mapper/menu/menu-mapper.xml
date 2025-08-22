@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="menumapper">
+	
+	<select id="selectMenus" resultType="com.kh.menu.model.dto.MenuDto$MenuResponse">
+		SELECT * 
+		FROM MENU
+		<where>
+			<if test="type != null and type != 'all'">
+				TYPE = #{type}
+			</if>
+			<if test="taste != null and taste != 'all'">
+				AND TASTE = #{taste}
+			</if>
+		</where>
+	</select>
+	
+	<insert id="insertMenu">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			SELECT SEQ_MENU_ID.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO MENU
+		VALUES (
+			#{id},
+			#{restaurant},
+			#{name},
+			#{price},
+			#{type},
+			#{taste}			
+		)		
+	</insert>
+	
+	<select id="menuDetail" resultType="com.kh.menu.model.dto.MenuDto$MenuResponse">
+		SELECT *
+		FROM MENU
+		WHERE ID = #{id}
+	</select>
+	
+	<update id="updateMenu">
+		UPDATE MENU SET
+			RESTAURANT = #{restaurant} , 
+			NAME = #{name} ,
+			PRICE = #{price} ,
+			TYPE = #{type} ,
+			TASTE = #{taste} 
+		WHERE ID = #{id}
+	</update>
+	
+	<delete id="deleteMenu">
+		DELETE FROM MENU 
+		WHERE ID = #{id}
+	</delete>
+	
+	
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
