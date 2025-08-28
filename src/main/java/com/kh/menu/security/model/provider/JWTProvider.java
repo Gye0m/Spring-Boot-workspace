@@ -42,18 +42,61 @@ import io.jsonwebtoken.security.Keys;
 public class JWTProvider {
 
 	private final Key key;
+	private final Key refreshKey;
 
-	public JWTProvider(@Value("${jwt.secret}") String secretBase64) { // 토큰 서명에 사용하는 키값.
+	public JWTProvider(
+			@Value("${jwt.secret}") 
+			String secretBase64,
+			@Value("${jwt.refresh-secret}") 
+			String refreshSecretBase64
+			) { // 토큰 서명에 사용하는 키값.
 		byte[] keyBytes = Decoders.BASE64.decode(secretBase64);
 		this.key = Keys.hmacShaKeyFor(keyBytes);
+		this.refreshKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(refreshSecretBase64));
 	}
 
 	public String createAccessToken(Long id, int minutes) {
 		Date now = new Date();
 		return Jwts.builder().setSubject(String.valueOf(id)) // sub는 곧 아이디
 				.setIssuedAt(now) // 토큰 발행시간
-				.setExpiration(new Date(now.getTime() + (1000 * 60 * minutes))) // 만료 시간
+				.setExpiration(new Date(now.getTime() + (1000L * 60 * minutes))) // 만료 시간
 				.signWith(key, SignatureAlgorithm.HS256) // 서명에 사용할 키값과 알고리즘
 				.compact();
+	}
+
+	/*
+	 * Refresh Token
+	 *  - 유효시간이 짧은 Access Token을 새로 갱신받기 위한 용도의 토큰.
+	 *  - Access Token보다 훨씬 긴 유효시간을 가지고 있다.
+	 * */
+	public String createRefreshToken(Long id, int i) {
+		Date now = new Date();
+		return Jwts.builder().setSubject(String.valueOf(id)) // 페이로드에 저장할 id
+				.setIssuedAt(now) // 토큰 발행시간
+				.setExpiration(new Date(System.currentTimeMillis() + (1000 * 60 * 60 * 24 * i))) // 만료 시간
+				.signWith(refreshKey, SignatureAlgorithm.HS256) // 서명에 사용할 키값과 알고리즘
+				.compact();
+	}
+	
+	public long getUserId(String token) {
+		return Long.valueOf(
+				Jwts.parserBuilder()
+					.setSigningKey(key)
+					.build()
+					.parseClaimsJws(token)
+					.getBody()
+					.getSubject()
+				);
+	}
+	
+	public Long parseRefresh(String token) {
+		return Long.valueOf(
+				Jwts.parserBuilder()
+					.setSigningKey(refreshKey)
+					.build()
+					.parseClaimsJws(token)
+					.getBody()
+					.getSubject()
+				);
 	}
 }
